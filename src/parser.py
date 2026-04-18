@@ -25,3 +25,11 @@ def parse_deadline(body: str, send_date):
         if future_dates:
             return max(future_dates, key=lambda d: d.replace(tzinfo=None))
     return None
+
+def get_task_title(subject: str) -> str:
+    noise = ["your hackerrank", "invitation to", "reminder", "- powered by hackerrank"]
+    title = subject.lower()
+    for phrase in noise:
+        title = title.replace(phrase, "")
+    return title.strip().title()
+
