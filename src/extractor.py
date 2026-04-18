@@ -4,6 +4,7 @@ from .auth import connect_gmail_auth
 from .db import insert_email
 import base64
 from email.utils import parsedate_to_datetime
+from .parser import parse_deadline
 
 def get_header(headers, name):
     for header in headers:
@@ -33,16 +34,20 @@ def extract_emails(service):
         msg = service.users().messages().get(userId="me", id=message["id"]).execute()
         headers = msg["payload"]["headers"]
 
+        send_date = parsedate_to_datetime(get_header(headers, "Date"))
+        deadline = parse_deadline(get_body(msg["payload"]), send_date)
+        
         email_list.append(
             {
         "id": message["id"],
         "thread_id": message["threadId"],
         "subject": get_header(headers, "Subject"),
         "sender": get_header(headers, "From"),
-        "date": parsedate_to_datetime(get_header(headers, "Date")).isoformat(),
+        "date": send_date.isoformat(),
         "snippet": msg["snippet"],
         "body": get_body(msg["payload"]),
         "labels": msg["labelIds"],
+        "deadline": deadline.isoformat() if deadline else None
         }   
         )
     
@@ -53,8 +58,6 @@ def main():
     emails = extract_emails(service)
     for email in emails:
         insert_email(email)
-    
-
             
 if __name__ == "__main__":
     main()
