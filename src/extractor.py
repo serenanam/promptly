@@ -56,11 +56,3 @@ def extract_emails(service):
     
     return email_list
     
-def main():
-    service = connect_gmail_auth()
-    emails = extract_emails(service)
-    for email in emails:
-        insert_email(email)
-            
-if __name__ == "__main__":
-    main()
