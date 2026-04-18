@@ -23,7 +23,7 @@ def get_body(payload):
 
 def extract_emails(service):
     email_list = []
-    results = service.users().messages().list(userId="me", q="subject:assessment OR subject:hackerrank").execute()
+    results = service.users().messages().list(userId="me", q="(subject:assessment OR subject:hackerrank) -subject:thank -subject:completed").execute()
     messages = results.get("messages", [])
 
     if not messages:
@@ -36,7 +36,8 @@ def extract_emails(service):
 
         send_date = parsedate_to_datetime(get_header(headers, "Date"))
         deadline = parse_deadline(get_body(msg["payload"]), send_date)
-        
+        if not deadline:
+            continue
         email_list.append(
             {
         "id": message["id"],
