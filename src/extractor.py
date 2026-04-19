@@ -5,6 +5,7 @@ from .db import insert_email
 import base64
 from email.utils import parsedate_to_datetime
 from .parser import parse_deadline, get_task_title
+from bs4 import BeautifulSoup
 
 def get_header(headers, name):
     for header in headers:
@@ -13,17 +14,24 @@ def get_header(headers, name):
     return None
 
 def get_body(payload):
+    raw = None
     if "parts" in payload:
         for part in payload["parts"]:
             if part["mimeType"] == "text/plain":
-                return base64.urlsafe_b64decode(part["body"]["data"]).decode("utf-8")
+                raw = base64.urlsafe_b64decode(part["body"]["data"]).decode("utf-8")
     elif "body" in payload and "data" in payload["body"]:
-        return base64.urlsafe_b64decode(payload["body"]["data"]).decode("utf-8")
+        raw = base64.urlsafe_b64decode(payload["body"]["data"]).decode("utf-8")
+    
+    if raw:
+        soup = BeautifulSoup(raw, "html.parser")
+        for tag in soup(["style", "script"]):
+            tag.decompose()
+        return soup.get_text(separator=" ")
     return None
 
 def extract_emails(service):
     email_list = []
-    results = service.users().messages().list(userId="me", q="(subject:assessment OR subject:hackerrank) -subject:thank -subject:completed -subject:results").execute()
+    results = service.users().messages().list(userId="me", q="(subject:assessment OR subject:hackerrank) -subject:thank -subject:thanks -subject:completed -subject:results -subject:received").execute()
     messages = results.get("messages", [])
 
     if not messages:
@@ -51,6 +59,7 @@ def extract_emails(service):
         "labels": msg["labelIds"],
         "deadline": deadline.isoformat() if deadline else None,
         "title": get_task_title(get_header(headers, "Subject")),
+        "link": f"https://mail.google.com/mail/u/0/#inbox/{message['id']}",
         }   
         )
     

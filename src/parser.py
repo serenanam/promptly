@@ -3,23 +3,37 @@ from datetime import datetime
 from datetime import timedelta
 import re
 
+def parse_relative_deadline(body, send_date):
+    match = re.search(r"within\s+(\d+)\s+(day|hour|week)", body, re.IGNORECASE)
+    if match:
+        amount = int(match.group(1))
+        unit = match.group(2).lower()
+        if unit == "day":
+            return send_date + timedelta(days=amount)
+        elif unit == "hour":
+            return send_date + timedelta(hours=amount)
+        elif unit == "week":
+            return send_date + timedelta(weeks=amount)
+    return None
+
 def parse_deadline(body: str, send_date):
     if not body:
         return None
     
-    match = re.search(r"(\d+)[-\s]hour", body, re.IGNORECASE)
-    if match:
-        hours = int(match.group(1))
-        return send_date + timedelta(hours=hours)
+    relative = parse_relative_deadline(body, send_date)
+    if relative:
+        return relative
     
     dates = search_dates(
         body, 
         settings={"RELATIVE_BASE": send_date}
     )
+    print("Found dates:", dates)
     if dates:
         future_dates = [
-            date for text, date in dates 
-            if date.replace(tzinfo=None) > send_date.replace(tzinfo=None)
+            date for text, date in dates
+            if date.tzinfo is not None  # only keep dates with timezone
+            and date.replace(tzinfo=None) > send_date.replace(tzinfo=None)
             and date.replace(tzinfo=None) < send_date.replace(tzinfo=None) + timedelta(days=365)
         ]
         if future_dates:
