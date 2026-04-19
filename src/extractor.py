@@ -6,6 +6,7 @@ import base64
 from email.utils import parsedate_to_datetime
 from .parser import parse_deadline, get_task_title
 from bs4 import BeautifulSoup
+from datetime import datetime, timezone
 
 def get_header(headers, name):
     for header in headers:
@@ -33,6 +34,7 @@ def extract_emails(service):
     email_list = []
     results = service.users().messages().list(userId="me", q="(subject:assessment OR subject:hackerrank) -subject:thank -subject:thanks -subject:completed -subject:results -subject:received").execute()
     messages = results.get("messages", [])
+    print(f"Found {len(messages)} messages")
 
     if not messages:
         print("No messages found.")
@@ -41,12 +43,17 @@ def extract_emails(service):
     for message in messages:
         msg = service.users().messages().get(userId="me", id=message["id"]).execute()
         headers = msg["payload"]["headers"]
+        subject = get_header(headers, "Subject")
+        print(f"Processing: {subject}")
 
         send_date = parsedate_to_datetime(get_header(headers, "Date"))
         deadline = parse_deadline(get_body(msg["payload"]), send_date)
+        print(f"Deadline: {deadline}")
         
-        if not deadline:
+        if not deadline or deadline.replace(tzinfo=None) < datetime.now().replace(tzinfo=None):
+            print("Skipping - no deadline or past deadline")
             continue
+
         email_list.append(
             {
         "id": message["id"],

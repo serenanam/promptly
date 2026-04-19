@@ -1,6 +1,9 @@
 from .auth import connect_gmail_auth
-from .extractor import extract_emails, insert_email
+from .extractor import extract_emails
+from .db import insert_email
 from .todo import show_todos
+from dateparser.search import search_dates
+from email.utils import parsedate_to_datetime
 
 def main():
     print("connecting gmail auth...")

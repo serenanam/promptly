@@ -28,16 +28,18 @@ def parse_deadline(body: str, send_date):
         body, 
         settings={"RELATIVE_BASE": send_date}
     )
-    print("Found dates:", dates)
+    print("Dates found:", dates)
+
     if dates:
         future_dates = [
             date for text, date in dates
-            if date.tzinfo is not None  # only keep dates with timezone
-            and date.replace(tzinfo=None) > send_date.replace(tzinfo=None)
+            if date.replace(tzinfo=None) > send_date.replace(tzinfo=None)
             and date.replace(tzinfo=None) < send_date.replace(tzinfo=None) + timedelta(days=365)
+            and len(text.strip()) > 5
         ]
         if future_dates:
-            return max(future_dates, key=lambda d: d.replace(tzinfo=None))
+            return min(future_dates, key=lambda d: d.replace(tzinfo=None))
+        
     return None
 
 def get_task_title(subject: str) -> str:
