@@ -6,7 +6,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
-SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
+SCOPES = ["https://www.googleapis.com/auth/gmail.readonly", "https://www.googleapis.com/auth/calendar"]
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 token_path = os.path.join(BASE_DIR, "token.json")
@@ -32,9 +32,9 @@ def connect_gmail_auth():
     
     try:
         # Call the Gmail API
-        service = build("gmail", "v1", credentials=creds)
-                    
-        return service
+        gmail_service = build("gmail", "v1", credentials=creds)
+        calendar_service = build("calendar", "v3", credentials=creds)
+        return gmail_service, calendar_service            
 
     except HttpError as error:
         print(f"An error occurred: {error}")
